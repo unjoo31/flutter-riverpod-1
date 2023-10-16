@@ -12,12 +12,33 @@ void main() {
   );
 }
 
-// 창고 class(상태, 행위)(Provider - 상태만 필요, StateNotifierProvider - 내부 상태 + 메서드 필요)
-int num = 1; // Provider - 창고 데이터(상태만 있을 경우 class로 만들 필요는 없다)
+// 창고 데이터 class
+class Model {
+  int num; // 창고 데이터
+  Model(this.num);
+}
 
-// 창고 관리자
-final numProvider = Provider<int>((ref) {
-  return num;
+// 창고 class(상태, 행위)(Provider - 상태만 필요, StateNotifierProvider - 내부 상태 + 메서드 필요)
+// Provider - 창고 데이터(상태만 있을 경우 class로 만들 필요는 없다)
+class ViewModel extends StateNotifier<Model?> {
+  ViewModel(super.state); // state
+
+  // 초기값 설정하는 행위
+  void init() {
+    // 통신 코드
+    state = Model(1);
+  }
+
+  // 상태값을 변경하는 행위
+  void change() {
+    state = Model(2);
+  }
+}
+
+// 창고 관리자 StateNotifierProvider<창고 이름, 창고 데이터 타입>
+final numProvider = StateNotifierProvider<ViewModel, Model?>((ref) {
+  // 창고에 접근하기
+  return ViewModel(null)..init(); // ..init() : 통신코드를 날린다
 });
 
 class MyApp extends StatelessWidget {
@@ -44,10 +65,29 @@ class HomePage extends StatelessWidget {
               MyText1(),
               MyText2(),
               MyText3(),
+              MyButton(),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class MyButton extends ConsumerWidget {
+  const MyButton({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ElevatedButton(
+      onPressed: () {
+        ref
+            .read(numProvider.notifier) // numProvider.notifier : 메서드에 접근하기
+            .change();
+      },
+      child: Text("상태변경"),
     );
   }
 }
@@ -59,7 +99,7 @@ class MyText3 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text("없음", style: TextStyle(fontSize: 30));
+    return Text("5", style: TextStyle(fontSize: 30));
   }
 }
 
@@ -70,8 +110,14 @@ class MyText2 extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    int num = ref.read(numProvider);
-    return Text("${num}", style: TextStyle(fontSize: 30));
+    // WidgetRef ref : 창고 관리자에게 접근가능
+    Model? model = ref.watch(numProvider); // 창고 관리자에 접급하기
+
+    if (model == null) {
+      return CircularProgressIndicator();
+    } else {
+      return Text("${model.num}", style: TextStyle(fontSize: 30));
+    }
   }
 }
 
@@ -84,7 +130,12 @@ class MyText1 extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // WidgetRef ref : 창고 관리자에게 접근가능
-    int num = ref.read(numProvider); // 창고 관리자에 접급하기
-    return Text("${num}", style: TextStyle(fontSize: 30));
+    Model? model = ref.watch(numProvider); // 창고 관리자에 접급하기
+
+    if (model == null) {
+      return CircularProgressIndicator();
+    } else {
+      return Text("${model.num}", style: TextStyle(fontSize: 30));
+    }
   }
 }
